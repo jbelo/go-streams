@@ -76,6 +76,63 @@ func Map[T, U any](s Stream[T], f func(T) (U, error)) Stream[U] {
 	return &Mapper[T, U]{base: s, f: f}
 }
 
+type FlatMapper[T, U any] struct {
+	base    Stream[Stream[T]]
+	current Stream[T]
+	f       func(T) (U, error)
+}
+
+func (s *FlatMapper[T, U]) Resolve(h func(U) error) (bool, Stream[U], error) {
+	if s == nil || s.base == nil {
+		return true, nil, nil
+	}
+
+	if s.current == nil {
+		eos, nxs, err := s.base.Resolve(func(v Stream[T]) error {
+			s.current = v
+
+			return nil
+		})
+
+		s.base = nxs
+
+		if err != nil {
+			return true, s, err
+		}
+
+		return eos, s, nil
+	}
+
+	eos, nxs, err := s.current.Resolve(func(v T) error {
+		u, e := s.f(v)
+		if e != nil {
+			return e
+		}
+
+		e = h(u)
+
+		return e
+	})
+
+	if err != nil {
+		return true, s, err
+	}
+
+	if eos {
+		s.current = nil
+
+		return false, s, nil
+	}
+
+	s.current = nxs
+
+	return false, s, nil
+}
+
+func FlatMap[T, U any](s Stream[Stream[T]], f func(T) (U, error)) Stream[U] {
+	return &FlatMapper[T, U]{base: s, f: f}
+}
+
 // A Dropper represents the stream that results from "dropping" the
 // first few elements from a given stream.
 type Dropper[T any] struct {

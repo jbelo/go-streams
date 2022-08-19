@@ -102,6 +102,40 @@ func TestMapShouldErrorOnError(t *testing.T) {
 	}
 }
 
+func TestShouldFlatMap(t *testing.T) {
+	s := NewFromSlice([]int{3, 1, 4, 1})
+	ss := Windowed(s, 2, 2)
+	sl := FlatMap(ss, func(v int) (int, error) {
+		return v, nil
+	})
+
+	c, _ := Collect(sl)
+
+	if !reflect.DeepEqual(c, []int{3, 1, 1, 4, 4, 1}) {
+		t.Error(`Didn't FlatMap`)
+	}
+}
+
+func TestShouldFlatMapOnNilAsEmptyStream(t *testing.T) {
+	s := (*FlatMapper[int, int])(nil)
+
+	eos, _, _ := s.Resolve(func(v int) error { return nil })
+
+	if !eos {
+		t.Error(`Didn't FlatMap on nil`)
+	}
+}
+
+func TestShouldFlatMapOnZeroValueAsEmptyStream(t *testing.T) {
+	s := &FlatMapper[int, int]{}
+
+	eos, _, _ := s.Resolve(func(v int) error { return nil })
+
+	if !eos {
+		t.Error(`Didn't FlatMap on zero value`)
+	}
+}
+
 func TestShouldDrop(t *testing.T) {
 	s := NewFromSlice([]int{3, 1, 4})
 	s = Drop(s, 2)

@@ -121,3 +121,17 @@ It could even take more than `n` evaluations, since the evaluation of
 `s.base.Resolve(...)` may itself not evaluate its parameter function.
 Note also that the stream keeps state in the `c` field, and the same
 `s` stream is returned in every case.
+
+## Example of Usage
+
+The following is an example of construction of a stream that counts
+how many increments there are between consecutive integers in a file
+`input`.
+
+```
+	s := NewStreamOfFileInts("input")
+	s = Diff(s)
+	s = Filter(s, func(v int) bool { return 0 < v })
+	c, _ := Count(s)
+
+```

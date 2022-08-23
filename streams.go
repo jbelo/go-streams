@@ -152,8 +152,6 @@ func (s *Dropper[T]) Resolve(h func(u T) error) (bool, Stream[T], error) {
 			return nil
 		}
 
-		s.c++
-
 		return h(v)
 	})
 
